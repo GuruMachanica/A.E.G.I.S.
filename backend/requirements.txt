@@ -1,0 +1,24 @@
+fastapi==0.116.1
+uvicorn[standard]==0.35.0
+PyJWT==2.10.1
+pydantic==2.11.9
+email-validator==2.3.0
+python-multipart>=0.0.9,<1
+
+# Realtime audio + ASSIST/AASIST scoring runtime
+numpy>=1.24,<3
+soundfile>=0.12,<1
+librosa==0.11.0
+torch>=2.2,<3
+torchaudio>=2.2,<3
+
+# Optional model loader support in app/ml/inference.py
+joblib>=1.3,<2
+
+# PDF export for AI call analysis report
+reportlab>=4.2,<5
+
+# Async HTTP for Sarvam STT API
+aiohttp>=3.9,<4
+webrtcvad
+tenacity

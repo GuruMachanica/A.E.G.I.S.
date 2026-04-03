@@ -1,0 +1,3 @@
+{"timestamp": 1773486204.8268366, "meta": {"sample_rate": 44100, "channels": 1, "format": "int16"}, "synthetic_probability": 2.421155477350112e-05, "scam_probability": 0.0, "alert": "OK", "wav_file": "data\\wavs\\1773486204_34db7d43.wav"}
+{"timestamp": 1773486218.8136344, "meta": {"sample_rate": 44100, "channels": 1, "format": "int16"}, "synthetic_probability": 2.421155477350112e-05, "scam_probability": 0.0, "alert": "OK", "wav_file": "data\\wavs\\1773486218_097de17d.wav"}
+{"timestamp": 1773486288.242371, "meta": {"sample_rate": 44100, "channels": 1, "format": "int16"}, "synthetic_probability": 2.421155477350112e-05, "scam_probability": 0.0, "alert": "OK", "wav_file": "data\\wavs\\1773486288_2cfc9e66.wav"}

@@ -1,0 +1,29 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aegis-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_PATH: /data/aegis_backend.db
+      ASSIST_FAKEVOICE_DIR: /app/app/ml/ASSIST-FAKEVOICE-DETECTION
+      ASSIST_TARGET_SAMPLE_RATE: 16000
+    volumes:
+      - backend_data:/data
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: aegis-cloudflared
+    restart: unless-stopped
+    depends_on:
+      - api
+    command: tunnel --no-autoupdate run --config /etc/cloudflared/config.yml
+    volumes:
+      - ./deploy/cloudflare/cloudflared-config.yml:/etc/cloudflared/config.yml:ro
+      - ./deploy/cloudflare/credentials:/etc/cloudflared:ro
+
+volumes:
+  backend_data:

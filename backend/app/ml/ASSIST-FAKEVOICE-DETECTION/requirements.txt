@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+PyJWT
+google-auth
+numpy
+soundfile
+librosa
+websockets
+torch
+torchaudio
+pyaudio
+torchcontrib
+tensorboard
+# If you want the real AASIST integration, install the repo directly:
+# git+https://github.com/clovaai/aasist.git

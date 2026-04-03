@@ -1,0 +1,41 @@
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Python environments and caches
+venv/
+.venv/
+**/.venv/
+**/.venv*/
+**/__pycache__/
+**/*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local env files
+.env
+**/.env
+
+# Runtime data / logs
+*.log
+*.tmp
+*.sqlite
+*.db
+*.db-journal
+
+# Flutter / Dart generated files
+aegis_app/.dart_tool/
+aegis_app/build/
+aegis_app/.flutter-plugins
+aegis_app/.flutter-plugins-dependencies
+aegis_app/.packages
+
+# Platform build caches
+aegis_app/android/.gradle/
+
+# Coverage and test artifacts
+coverage/
+*.lcov
