@@ -36,6 +36,9 @@ aegis_app/.packages
 # Platform build caches
 aegis_app/android/.gradle/
 
+# Firebase / Google service secrets
+aegis_app/android/app/google-services.json
+
 # Coverage and test artifacts
 coverage/
 *.lcov
