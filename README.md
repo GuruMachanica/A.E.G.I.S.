@@ -1,4 +1,4 @@
-# AEGIS App Monorepo
+# AEGIS App
 
 AI-assisted anti-scam platform with:
 - Flutter mobile client
@@ -68,3 +68,8 @@ powershell -ExecutionPolicy Bypass -File .\check_backend_health.ps1 -Port 8000
 
 - Do not commit virtual environments, local databases, or generated build folders.
 - If you need a fresh setup, recreate venv and rerun dependency installation.
+
+## License
+
+This repository is licensed under the Inspiration-Only License.
+See [LICENSE](LICENSE) for full terms.
