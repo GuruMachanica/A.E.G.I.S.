@@ -6,7 +6,7 @@ from typing import Optional
 
 from app.core.config import VOICE_FUSION_WEIGHT, INTENT_FUSION_WEIGHT
 
-# Comprehensive Threat Keyword Patterns (English & Hindi/Hinglish)
+# Comprehensive Threat Keyword Patterns (English, Hindi, Bengali, Tamil, Telugu, Marathi, Kannada)
 SCAM_ALERT_RULES: list[tuple[str, str, str]] = [
     ("otp", "otp_asked", "🚨 ALERT: Someone is asking for your OTP / verification code. NEVER share your OTP!"),
     ("verification code", "otp_asked", "🚨 ALERT: Someone is asking for your verification code. NEVER share it!"),
@@ -24,27 +24,35 @@ SCAM_ALERT_RULES: list[tuple[str, str, str]] = [
     ("transfer money", "transfer_request", "🚨 DANGER: Urgent money transfer request detected."),
     ("send money", "transfer_request", "🚨 DANGER: Urgent money transfer request detected."),
     ("refund", "refund_scam", "⚠️ WARNING: Refund process request. Never send money to receive a refund."),
+    # Multilingual triggers
+    ("ओटीपी", "otp_asked", "🚨 ALERT: OTP requested in Hindi. Never share your OTP!"),
+    ("पैसे भेजो", "transfer_request", "🚨 DANGER: Money transfer demand detected in Hindi."),
+    ("টাকা পাঠাও", "transfer_request", "🚨 DANGER: Money transfer demand detected in Bengali."),
+    ("பணம் அனுப்பு", "transfer_request", "🚨 DANGER: Money transfer demand detected in Tamil."),
+    ("డబ్బులు పంపండి", "transfer_request", "🚨 DANGER: Money transfer demand detected in Telugu."),
+    ("पैसे पाठवा", "transfer_request", "🚨 DANGER: Money transfer demand detected in Marathi."),
+    ("ಹಣ ಕಳುಹಿಸಿ", "transfer_request", "🚨 DANGER: Money transfer demand detected in Kannada."),
 ]
 
 HIGH_RISK_PATTERNS = [
-    r"\botp\b",
-    r"\bpin\b",
+    r"\botp\b|ओटीपी|ஓடிபி|ఓటీపీ|ಒಟಿಪಿ",
+    r"\bpin\b|पिन",
     r"\bcvv\b",
-    r"\bpassword\b",
-    r"credit\s*card",
-    r"bank\s*account",
+    r"\bpassword\b|पासवर्ड",
+    r"credit\s*card|debit\s*card",
+    r"bank\s*account|खाता|बँक\s*खाते|வங்கி\s*கணக்கு|బ్యాంక్\s*ఖాతా",
     r"ifsc",
     r"kyc",
-    r"aadhaar|aadhar|आधार",
+    r"aadhaar|aadhar|आधार|ஆதார்|ఆధార్|ಆಧಾರ್",
     r"pan\s*card|पैन",
-    r"urgent|immediately|right\s*now|तुरंत",
-    r"\bmoney\b|पैसे|रुपये|रकम|rupaye",
-    r"transfer\s*money|send\s*money|bhejo|bhjdo",
-    r"reward\s*claim|lottery|jackpot",
-    r"block\s*your\s*account|freeze\s*account|खाता\s*ब्लॉक",
+    r"urgent|immediately|right\s*now|तुरंत|तात्काळ|உடனடியாக|వెంటనే",
+    r"\bmoney\b|पैसे|रुपये|रकम|rupaye|টাকা|பணம்|డబ్బులు|ಹಣ",
+    r"transfer\s*money|send\s*money|bhejo|bhjdo|पाठवा|அனுப்பு|పంపండి|ಕಳುಹಿಸಿ",
+    r"reward\s*claim|lottery|jackpot|लॉटरी",
+    r"block\s*your\s*account|freeze\s*account|खाता\s*ब्लॉक|बंद\s*हो\s*जाएगा",
     r"verification\s*code",
     r"upi\s*pin",
-    r"arrest|police|cbi|customs|digital\s*arrest",
+    r"arrest|police|cbi|customs|digital\s*arrest|डिजिटल\s*अरेस्ट|पोलीस|கைது",
 ]
 
 

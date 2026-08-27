@@ -27,6 +27,8 @@ from app.schemas.calls import (
     LiveCallStartOut,
 )
 from app.services.audio_service import check_speech_vad, slice_pcm_windows
+from app.services.emergency_service import emergency_service
+from app.services.lookup_service import phone_lookup_service
 from app.services.risk_engine import RiskEngine
 from app.services.session_manager import session_store
 from app.services.stt_service import stt_service
@@ -235,3 +237,30 @@ async def end_live_call(data: LiveCallEndIn) -> LiveCallEndOut:
         total_transcription=full_transcript,
         detected_keywords=keywords_list,
     )
+
+
+@router.get("/lookup/{phone_number}")
+async def lookup_phone_threat(phone_number: str) -> dict[str, Any]:
+    """Inspect phone number reputation, spam markers, and carrier prefix risk."""
+    return phone_lookup_service.analyze_number(phone_number)
+
+
+@router.post("/emergency/trigger")
+async def trigger_emergency_alert(payload: dict[str, Any]) -> dict[str, Any]:
+    """Trigger guardian emergency SOS notification when critical scam risk is flagged."""
+    guardian_email = payload.get("guardian_email", "")
+    user_name = payload.get("user_name", "AEGIS User")
+    caller_number = payload.get("caller_number", "Unknown Caller")
+    risk_score = float(payload.get("risk_score", 0.90))
+    detected_keywords = payload.get("detected_keywords", [])
+    risk_level = payload.get("risk_level", "DANGER")
+
+    result = emergency_service.dispatch_threat_alert(
+        guardian_email=guardian_email,
+        user_name=user_name,
+        caller_number=caller_number,
+        risk_score=risk_score,
+        detected_keywords=detected_keywords,
+        risk_level=risk_level,
+    )
+    return result
