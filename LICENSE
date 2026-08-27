@@ -1,38 +1,30 @@
 INSPIRATION-ONLY LICENSE
+
 Copyright (c) 2026 Team Ironlogic
 All rights reserved.
 
-Team members:
+Team Members:
  - Mohammad Huzaifa
  - Mohnish Narayan Gupta
  - Isnia Izhar
  - Ashutosh Mishra
 
-1. Grant of Permission
+1. GRANT OF PERMISSION
+Permission is granted to any person viewing this repository to review the source code, architecture, and associated documentation for educational, learning, and personal inspiration purposes only.
 
-Permission is granted to view this project and use ideas from it for learning and inspiration only.
+2. RESTRICTIONS
+You may not, without prior explicit written permission from the copyright owners:
+ - Copy, reproduce, redistribute, republish, or paste any part of this source code or architecture.
+ - Create derivative repositories, forks, or projects that reuse substantial portions of this codebase.
+ - Extract, reuse, or redistribute project assets, design systems, UI components, animations, or branding elements.
+ - Sell, license, sublicense, commercialize, or include this project or any derivative work in commercial products or hosted services.
 
-2. Restrictions
+3. OWNERSHIP
+All rights, title, and interest in and to the software, models, algorithms, and design elements remain exclusively with Team Ironlogic.
 
-You may not, without prior written permission from the copyright owner(s):
+4. DISCLAIMER OF WARRANTY
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES.
 
- - Copy, reproduce, or paste any part of this source code
- - Redistribute or publish this project in whole or in part
- - Create derivative repositories that reuse substantial portions of this code
- - Reuse project assets, design sections, animations, or branding elements
- - Sell, sublicense, or otherwise commercially exploit this codebase
-
-3. Ownership
-
-All rights, title, and interest in this project remain with the copyright owner(s): Team Ironlogic.
-
-4. No Warranty
-
-This project is provided "AS IS", without warranty of any kind, express or implied.
-
-5. Enforcement
-
-Unauthorized use is a violation of copyright law and this license.
-
-For permissions, contact:
+5. CONTACT FOR LICENSING & PERMISSIONS
+For commercial inquiries, partnerships, or permission requests, contact:
 ironlogic@zohomail.in
