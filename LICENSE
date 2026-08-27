@@ -1,30 +1,50 @@
-INSPIRATION-ONLY LICENSE
+PROPRIETARY - STRICT PRIVATE USE & INSPECTION LICENSE
 
-Copyright (c) 2026 Team Ironlogic
-All rights reserved.
+Copyright (c) 2026 Team Ironlogic. All rights reserved.
 
-Team Members:
- - Mohammad Huzaifa
+Team Members & Copyright Owners:
+ - Mohammad Huzaifa (https://github.com/GuruMachanica)
  - Mohnish Narayan Gupta
  - Isnia Izhar
  - Ashutosh Mishra
 
-1. GRANT OF PERMISSION
-Permission is granted to any person viewing this repository to review the source code, architecture, and associated documentation for educational, learning, and personal inspiration purposes only.
+---
 
-2. RESTRICTIONS
-You may not, without prior explicit written permission from the copyright owners:
- - Copy, reproduce, redistribute, republish, or paste any part of this source code or architecture.
- - Create derivative repositories, forks, or projects that reuse substantial portions of this codebase.
- - Extract, reuse, or redistribute project assets, design systems, UI components, animations, or branding elements.
- - Sell, license, sublicense, commercialize, or include this project or any derivative work in commercial products or hosted services.
+### 1. Grant of Permission
+Permission is granted solely to inspect the raw source code, architecture diagrams, and documentation of this repository for private educational study, personal learning, and peer inspection. No other rights or licenses are granted. Under no circumstances is permission granted to run, deploy, compile, execute, copy, distribute, or host this software or its subcomponents in any environment (including local machines, cloud providers, virtual servers, mobile devices, emulators, or production systems).
 
-3. OWNERSHIP
-All rights, title, and interest in and to the software, models, algorithms, and design elements remain exclusively with Team Ironlogic.
+---
 
-4. DISCLAIMER OF WARRANTY
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES.
+### 2. Strict Restrictions & Prohibitions
+By viewing, cloning, checking out, downloading, or inspecting this repository, you enter into a legally binding agreement adhering to the following strict prohibitions without prior, express, and written authorization from the copyright owners:
 
-5. CONTACT FOR LICENSING & PERMISSIONS
-For commercial inquiries, partnerships, or permission requests, contact:
-ironlogic@zohomail.in
+1. **No Execution or Deployment**: You may not compile, build, run, host, deploy, or execute the A.E.G.I.S. platform (including the Flutter mobile app, FastAPI backend, live audio streaming pipelines, WebSocket services, or background daemons) on any public or private server (such as AWS, GCP, Azure, Oracle Cloud, Render, Docker containers, VPS, or local environments) for active call monitoring or operational use.
+2. **No Code Copying or Plagiarism**: You may not copy, duplicate, clone, replicate, hotlink, republish, or paste any portion of this codebase, algorithms, API endpoints, schema definitions, DSP algorithms, or database structures.
+3. **No Derivative Works or Forks**: You may not create, compile, distribute, publish, or sublicense any derivative works, modified builds, forks, plugins, or complementary extensions derived from this codebase.
+4. **No Pipeline or Model Integration**: You may not extract or integrate any subcomponents of A.E.G.I.S.—including the AASIST graph neural network model weights/loaders, Sarvam STT pipeline wrappers, WebRTC VAD audio chunkers, regex intent scanners, or PDF forensic report generators—into third-party applications, commercial bots, security products, or API gateways.
+5. **No Commercial Exploitation**: You may not sell, lease, rent, license, sub-license, commercialize, or use this software, models, or documentation to generate direct or indirect revenue.
+6. **No Asset or UI Theft**: You may not reuse any visual assets, logos, risk radar gauges, waveform widgets, design systems, UI components, animations, color palettes, or branding elements created for A.E.G.I.S.
+7. **No Reverse Engineering or Penetration Attacks**: You may not reverse-engineer, decompile, disassemble, or extract weights/parameters from the models, backend services, or mobile client. You are strictly forbidden from performing penetration testing, vulnerability scanning, fuzzing, or DDoS/DoS simulations against active A.E.G.I.S. infrastructure.
+8. **No AI / LLM Model Training**: This codebase, including all source files, documentation, model architectures, datasets, and comments, must not be used as training inputs, fine-tuning corpora, or scraped to train Large Language Models (LLMs), code synthesis agents, developer assistants, or generative AI models without written consent.
+9. **No Unauthorized Academic Submission**: Under no circumstances may this project, in whole or in part, be submitted as original work for academic credit, thesis evaluation, hackathons, grading, or certification at any university, college, school, or educational boot camp without explicit prior written authorization from the copyright owners.
+
+---
+
+### 3. Intellectual Property & Ownership
+All rights, titles, interests, patents, copyrights, and intellectual property rights in and to this project (including the A.E.G.I.S. name, branding, Deepfake Voice Defense engine, AASIST integration architecture, risk scoring algorithms, database schemas, and client UI) remain exclusively owned by Team Ironlogic.
+
+---
+
+### 4. No Warranty
+THIS CODEBASE, MODELS, AND DOCUMENTATION ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+---
+
+### 5. Breach of Terms & Legal Enforcement
+Any violation of these terms immediately and automatically terminates all permission to inspect this repository. Unauthorized copying, execution, redistribution, or commercial use constitutes willful copyright infringement under international intellectual property treaties (including the DMCA and WIPO conventions). The copyright owners reserve all rights to pursue immediate injunctive relief, statutory damages, legal costs, and immediate DMCA takedown proceedings against any unauthorized deployments or duplicate repositories.
+
+---
+
+### 6. Licensing Inquiries & Permissions
+For commercial licensing, enterprise partnerships, or academic authorization requests, contact:  
+📧 **ironlogic@zohomail.in**

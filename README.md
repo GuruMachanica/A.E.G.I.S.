@@ -4,7 +4,7 @@
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.2+-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org)
 [![Flutter](https://img.shields.io/badge/Flutter-3.11+-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![License](https://img.shields.io/badge/License-Inspiration--Only-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Proprietary%20Strict%20Inspection%20Only-red.svg)](LICENSE)
 
 **A.E.G.I.S** (*Automated Evaluation & Governance Intelligence System*) is an enterprise-grade, real-time communication defense platform designed to detect **deepfake voice impersonation** and **social engineering scams** during live audio phone calls.
 
@@ -180,7 +180,7 @@ flutter run
 
 ## 📄 License
 
-This repository is licensed under the **Inspiration-Only License**.  
-See the [LICENSE](LICENSE) file for full terms and conditions.
+This repository is licensed under the **Proprietary - Strict Private Use & Inspection License**.  
+See the [LICENSE](LICENSE) file for the full legally binding terms and restrictions.
 
 **Copyright (c) 2026 Team Ironlogic. All rights reserved.**
