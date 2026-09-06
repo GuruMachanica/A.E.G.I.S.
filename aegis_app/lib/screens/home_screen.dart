@@ -5,12 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../core/colors.dart';
-import '../core/constants.dart';
-import '../widgets/risk_gauge.dart';
 import '../models/call_record.dart';
 import '../providers/call_monitor_provider.dart';
-import '../providers/home_provider.dart';
 import '../providers/history_provider.dart';
+import '../providers/home_provider.dart';
 import '../providers/navigation_provider.dart';
 import '../widgets/aegis_logo.dart';
 
@@ -27,7 +25,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 1200), () {
+    Future.delayed(const Duration(milliseconds: 600), () {
       if (mounted) setState(() => _isLoading = false);
     });
   }
@@ -40,24 +38,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     if (_isLoading) {
       return Container(
-        decoration: const BoxDecoration(gradient: bgGradient),
+        color: bgPrimary,
         child: const SafeArea(
           child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 SizedBox(
-                  width: 36,
-                  height: 36,
+                  width: 38,
+                  height: 38,
                   child: CircularProgressIndicator(
-                    strokeWidth: 3,
-                    color: accentTeal,
+                    strokeWidth: 2.8,
+                    color: accentCyan,
                   ),
                 ),
-                SizedBox(height: 12),
+                SizedBox(height: 14),
                 Text(
-                  'Loading security dashboard...',
-                  style: TextStyle(color: textSecondary),
+                  'SYNCING 100% ON-DEVICE VAULT...',
+                  style: TextStyle(
+                    color: textSecondary,
+                    fontFamily: 'JetBrains Mono',
+                    fontSize: 11,
+                  ),
                 ),
               ],
             ),
@@ -68,104 +70,224 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     final score = _securityScore(history.records);
     final scoreColor = score >= 75
-        ? riskGreen
+        ? accentEmerald
         : score >= 45
-        ? riskYellow
-        : riskRed;
+            ? riskYellow
+            : riskRed;
 
     final recentAlerts =
         history.records.where((r) => r.riskScore >= 50).toList()
           ..sort((a, b) => b.callTime.compareTo(a.callTime));
-    final usingPlaceholderBackend =
-        backendBaseUrl.contains('10.0.2.2') ||
-        backendBaseUrl.contains('localhost') ||
-        backendBaseUrl.contains('example.com');
 
     return Container(
-      decoration: const BoxDecoration(gradient: bgGradient),
+      color: bgPrimary,
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ── Top HUD Header ───────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
               child: Row(
                 children: [
                   const AegisLogo(
                     size: 38,
-                    assetPath: 'assets/images/aegis_app_logo.png',
+                    showGlow: false,
                   ),
                   const SizedBox(width: 10),
-                  Text(
-                    'A.E.G.I.S.',
-                    style: GoogleFonts.rajdhani(
-                      color: textPrimary,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 2,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'A.E.G.I.S.',
+                        style: GoogleFonts.rajdhani(
+                          color: textPrimary,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 2.5,
+                        ),
+                      ),
+                      Text(
+                        'DEFENSE HUB • V2.0',
+                        style: GoogleFonts.jetBrainsMono(
+                          color: textMuted,
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  // Active Protection Armed Chip
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: accentEmerald.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: accentEmerald.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: accentEmerald,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: accentEmerald,
+                                blurRadius: 6,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '100% LOCAL',
+                          style: GoogleFonts.rajdhani(
+                            color: accentEmerald,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 18),
+
             Expanded(
               child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (usingPlaceholderBackend) ...[
-                      _ConfigWarningCard(baseUrl: backendBaseUrl),
-                      const SizedBox(height: 12),
-                    ],
-                    _SystemStatusCard(enabled: home.detectionEnabled),
-                    const SizedBox(height: 12),
-                    _MonitoringIndicatorCard(monitor: monitor),
-                    const SizedBox(height: 12),
-                    _AiRiskInsightCard(monitor: monitor),
-                    const SizedBox(height: 12),
-                    _SecurityScoreCard(score: score, color: scoreColor),
-                    const SizedBox(height: 12),
-                    _StatsRow(history: history),
-                    const SizedBox(height: 12),
-                    if (home.lastThreat != null)
-                      _ThreatCard(record: home.lastThreat!).animate().fadeIn(),
-                    const SizedBox(height: 12),
-                    _RecentAlertsCard(records: recentAlerts.take(2).toList()),
-                    const SizedBox(height: 14),
-                    _DetectionToggle(
+                    const SizedBox(height: 10),
+
+                    // ── Central Cyber Shield Core Card ───────────────────────
+                    _CyberShieldCore(
+                      score: score,
+                      scoreColor: scoreColor,
                       enabled: home.detectionEnabled,
                       onToggle: () {
-                        final wasEnabled = home.detectionEnabled;
                         ref.read(homeProvider.notifier).toggleDetection();
-                        if (!wasEnabled) context.push('/home/monitor');
                       },
+                      onLaunchLive: () => context.push('/home/monitor'),
                     ),
-                    const SizedBox(height: 18),
-                    Text(
-                      'Quick Access',
-                      style: GoogleFonts.rajdhani(
-                        color: textPrimary,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
+
+                    const SizedBox(height: 16),
+
+                    // ── 3 Telemetry Data Cards ───────────────────────────────
                     Row(
                       children: [
                         Expanded(
-                          child: _QuickAccessCard(
-                            icon: Icons.phone_outlined,
-                            label: 'Last Call Details',
-                            onTap: _showLastCallDetails,
+                          child: _TelemetryCard(
+                            label: 'SCANNED',
+                            value: '${history.todayScanned}',
+                            subtext: 'Calls Today',
+                            icon: Icons.shield_outlined,
+                            accentColor: accentCyan,
                           ),
                         ),
-                        const SizedBox(width: 14),
+                        const SizedBox(width: 10),
                         Expanded(
-                          child: _QuickAccessCard(
-                            icon: Icons.article_outlined,
-                            label: 'History',
+                          child: _TelemetryCard(
+                            label: 'NEUTRALIZED',
+                            value: '${history.blockedThreatsToday}',
+                            subtext: 'Threats Blocked',
+                            icon: Icons.gpp_bad_outlined,
+                            accentColor: history.blockedThreatsToday > 0
+                                ? riskRed
+                                : textMuted,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _TelemetryCard(
+                            label: 'EDGE LATENCY',
+                            value: '0ms',
+                            subtext: 'Pure On-Device',
+                            icon: Icons.bolt_rounded,
+                            accentColor: accentEmerald,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // ── Active Monitoring Card (if call is live) ─────────────
+                    if (monitor.isMonitoring) ...[
+                      _LiveCallQuickCard(monitor: monitor),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // ── Threat Intel Radar (India localized vectors) ────────
+                    _ThreatIntelRadarCard(),
+
+                    const SizedBox(height: 16),
+
+                    // ── Recent Forensic Alerts ──────────────────────────────
+                    if (recentAlerts.isNotEmpty) ...[
+                      Text(
+                        'CRITICAL INCIDENT LOGS',
+                        style: GoogleFonts.rajdhani(
+                          color: textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ...recentAlerts.take(2).map(
+                            (r) => _IncidentCard(
+                              record: r,
+                              onTap: () => _showRecordDetails(r),
+                            ),
+                          ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // ── Quick Access Buttons ─────────────────────────────────
+                    Text(
+                      'TACTICAL ACCESS',
+                      style: GoogleFonts.rajdhani(
+                        color: textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _QuickButton(
+                            icon: Icons.mic_rounded,
+                            title: 'Launch Live Monitor',
+                            subtitle: 'Real-time Audio Intercept',
+                            accent: accentCyan,
+                            onTap: () => context.push('/home/monitor'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _QuickButton(
+                            icon: Icons.folder_shared_outlined,
+                            title: 'Evidence Vault',
+                            subtitle: 'Call Logs & Dossiers',
+                            accent: accentEmerald,
                             onTap: () => ref
                                 .read(navigationProvider.notifier)
                                 .setIndex(1),
@@ -173,6 +295,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ],
                     ),
+
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -193,16 +316,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return value.clamp(0, 100);
   }
 
-  void _showLastCallDetails() {
-    final records = ref.read(historyProvider).records;
-    if (records.isEmpty) return;
-    final last = [...records]..sort((a, b) => b.callTime.compareTo(a.callTime));
-    final record = last.first;
+  void _showRecordDetails(CallRecord record) {
     showModalBottomSheet(
       context: context,
       backgroundColor: bgSurface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        side: BorderSide(color: inputBorder),
       ),
       builder: (_) => Padding(
         padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
@@ -210,27 +330,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Row(
+              children: [
+                const Icon(Icons.security_rounded, color: accentCyan, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'INCIDENT FORENSIC OVERVIEW',
+                  style: GoogleFonts.rajdhani(
+                    color: textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
             Text(
-              'Last Call Analysis',
+              'Target: ${record.callerName} • ${record.phoneNumber}',
               style: GoogleFonts.rajdhani(
                 color: textPrimary,
-                fontSize: 18,
+                fontSize: 15,
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 8),
             Text(
-              '${record.callerName} • ${record.phoneNumber}',
-              style: GoogleFonts.rajdhani(color: textSecondary, fontSize: 13),
-            ),
-            Text(
-              DateFormat('MMM dd, hh:mm a').format(record.callTime),
-              style: GoogleFonts.rajdhani(color: textMuted, fontSize: 12),
+              DateFormat('MMM dd, yyyy • hh:mm a').format(record.callTime),
+              style: GoogleFonts.jetBrainsMono(
+                color: textMuted,
+                fontSize: 11,
+              ),
             ),
             const SizedBox(height: 14),
-            _AnalysisLine('Overall Risk', '${record.riskScore}%'),
-            _AnalysisLine('Synthetic Voice', '${record.syntheticScore}%'),
-            _AnalysisLine('Scam Intent', '${record.intentScore}%'),
+            _AnalysisLine('Overall Threat Score', '${record.riskScore}%'),
+            _AnalysisLine('Synthetic Voice Index', '${record.syntheticScore}%'),
+            _AnalysisLine('Scam Intent Score', '${record.intentScore}%'),
+            _AnalysisLine(
+              'Status',
+              record.isSuspended ? 'QUARANTINED' : 'CLEARED',
+            ),
           ],
         ),
       ),
@@ -238,13 +376,298 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-class _SystemStatusCard extends StatelessWidget {
+class _CyberShieldCore extends StatelessWidget {
+  final int score;
+  final Color scoreColor;
   final bool enabled;
-  const _SystemStatusCard({required this.enabled});
+  final VoidCallback onToggle;
+  final VoidCallback onLaunchLive;
+
+  const _CyberShieldCore({
+    required this.score,
+    required this.scoreColor,
+    required this.enabled,
+    required this.onToggle,
+    required this.onLaunchLive,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final color = enabled ? riskGreen : riskRed;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+      decoration: BoxDecoration(
+        color: bgSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: enabled ? accentCyan.withValues(alpha: 0.3) : inputBorder,
+          width: 1.2,
+        ),
+        boxShadow: [
+          if (enabled)
+            BoxShadow(
+              color: accentCyan.withValues(alpha: 0.08),
+              blurRadius: 20,
+              spreadRadius: 2,
+            ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Circular shield meter
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 82,
+                height: 82,
+                child: CircularProgressIndicator(
+                  value: enabled ? score / 100.0 : 0.0,
+                  strokeWidth: 6,
+                  color: enabled ? scoreColor : textMuted,
+                  backgroundColor: bgPrimary,
+                ),
+              ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    enabled ? '$score%' : 'OFF',
+                    style: GoogleFonts.rajdhani(
+                      color: textPrimary,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Text(
+                    'SHIELD',
+                    style: GoogleFonts.jetBrainsMono(
+                      color: textMuted,
+                      fontSize: 8,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  enabled ? 'SYSTEM STATUS: ARMED' : 'SYSTEM STATUS: STANDBY',
+                  style: GoogleFonts.rajdhani(
+                    color: enabled ? accentEmerald : riskYellow,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  enabled
+                      ? 'Autonomous on-device acoustic & intent defense is guarding incoming audio.'
+                      : 'Call defense is currently paused. Tap below to activate protection.',
+                  style: GoogleFonts.rajdhani(
+                    color: textSecondary,
+                    fontSize: 12,
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    ElevatedButton(
+                      onPressed: onToggle,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: enabled ? bgPrimary : accentCyan,
+                        foregroundColor: enabled ? textPrimary : bgPrimary,
+                        side: BorderSide(
+                          color: enabled ? inputBorder : accentCyan,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                      child: Text(
+                        enabled ? 'PAUSE' : 'ARM SHIELD',
+                        style: GoogleFonts.rajdhani(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 11,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    OutlinedButton(
+                      onPressed: onLaunchLive,
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: accentCyan),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                      child: Text(
+                        'LIVE MONITOR',
+                        style: GoogleFonts.rajdhani(
+                          color: accentCyan,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 11,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TelemetryCard extends StatelessWidget {
+  final String label;
+  final String value;
+  final String subtext;
+  final IconData icon;
+  final Color accentColor;
+
+  const _TelemetryCard({
+    required this.label,
+    required this.value,
+    required this.subtext,
+    required this.icon,
+    required this.accentColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: bgSurface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: inputBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: accentColor, size: 18),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: GoogleFonts.rajdhani(
+              color: textPrimary,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          Text(
+            label,
+            style: GoogleFonts.jetBrainsMono(
+              color: accentColor,
+              fontSize: 8.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          Text(
+            subtext,
+            style: GoogleFonts.rajdhani(
+              color: textMuted,
+              fontSize: 10,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LiveCallQuickCard extends StatelessWidget {
+  final CallMonitorState monitor;
+  const _LiveCallQuickCard({required this.monitor});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDanger = monitor.isHighRisk;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: (isDanger ? riskRed : accentCyan).withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: (isDanger ? riskRed : accentCyan).withValues(alpha: 0.5),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.record_voice_over_rounded,
+            color: isDanger ? riskRed : accentCyan,
+            size: 24,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'ACTIVE CALL IN PROGRESS',
+                  style: GoogleFonts.rajdhani(
+                    color: isDanger ? riskRed : accentCyan,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Text(
+                  monitor.activeCallNumber,
+                  style: GoogleFonts.rajdhani(
+                    color: textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => context.push('/home/monitor'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isDanger ? riskRed : accentCyan,
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            ),
+            child: Text(
+              'VIEW HUD',
+              style: GoogleFonts.rajdhani(
+                fontWeight: FontWeight.w800,
+                fontSize: 11,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ThreatIntelRadarCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -256,23 +679,65 @@ class _SystemStatusCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'System Status',
-            style: GoogleFonts.rajdhani(color: textSecondary),
+          Row(
+            children: [
+              const Icon(Icons.radar_rounded, color: accentCyan, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                'LIVE SCAM VECTOR RADAR (INDIA)',
+                style: GoogleFonts.rajdhani(
+                  color: textSecondary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            enabled ? 'AI Protection Active' : 'Protection Disabled',
-            style: GoogleFonts.rajdhani(
-              color: color,
-              fontWeight: FontWeight.w700,
+          const SizedBox(height: 10),
+          _VectorItem('Digital Arrest Police Extortion', 'HIGH SEVERITY', riskRed),
+          _VectorItem('Electricity Bill Immediate KYC Disconnect', 'URGENT', riskYellow),
+          _VectorItem('Customs Parcel Courier Narcotics Scam', 'ACTIVE', riskYellow),
+        ],
+      ),
+    );
+  }
+
+  Widget _VectorItem(String name, String tag, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 4,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              name,
+              style: GoogleFonts.rajdhani(
+                color: textPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-          Text(
-            enabled
-                ? 'Microphone Monitoring Enabled'
-                : 'Turn on Threat Protection',
-            style: GoogleFonts.rajdhani(color: textMuted, fontSize: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              tag,
+              style: GoogleFonts.jetBrainsMono(
+                color: color,
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),
@@ -280,142 +745,63 @@ class _SystemStatusCard extends StatelessWidget {
   }
 }
 
-class _ConfigWarningCard extends StatelessWidget {
-  final String baseUrl;
-  const _ConfigWarningCard({required this.baseUrl});
+class _IncidentCard extends StatelessWidget {
+  final CallRecord record;
+  final VoidCallback onTap;
+
+  const _IncidentCard({required this.record, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: riskYellow.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: riskYellow.withValues(alpha: 0.35)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Environment Notice',
-            style: GoogleFonts.rajdhani(
-              color: riskYellow,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            'Using non-production backend: $baseUrl',
-            style: GoogleFonts.rajdhani(color: textSecondary, fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MonitoringIndicatorCard extends StatelessWidget {
-  final CallMonitorState monitor;
-  const _MonitoringIndicatorCard({required this.monitor});
-
-  @override
-  Widget build(BuildContext context) {
-    final text = monitor.isMonitoring
-        ? 'AI listening for scam patterns'
-        : monitor.isConnecting
-        ? 'Connecting secure scanner...'
-        : 'No call currently monitored';
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
         color: bgSurface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: inputBorder),
       ),
       child: Row(
         children: [
-          const Icon(Icons.call, color: accentTeal),
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: riskRed.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.warning_rounded, color: riskRed, size: 16),
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Active Call Monitoring',
+                  record.phoneNumber,
                   style: GoogleFonts.rajdhani(
                     color: textPrimary,
+                    fontSize: 13,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 Text(
-                  text,
-                  style: GoogleFonts.rajdhani(
-                    color: textSecondary,
-                    fontSize: 12,
+                  DateFormat('MMM dd • hh:mm a').format(record.callTime),
+                  style: GoogleFonts.jetBrainsMono(
+                    color: textMuted,
+                    fontSize: 10,
                   ),
                 ),
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AiRiskInsightCard extends StatelessWidget {
-  final CallMonitorState monitor;
-  const _AiRiskInsightCard({required this.monitor});
-
-  @override
-  Widget build(BuildContext context) {
-    final percent = (monitor.overallFraudScore * 100).round();
-    final level = monitor.safeRiskLevel.toLowerCase();
-    final levelText = level == 'danger'
-        ? 'High Risk'
-        : level == 'warning'
-        ? 'Moderate Risk'
-        : 'Low Risk';
-    final levelColor = level == 'danger'
-        ? riskRed
-        : level == 'warning'
-        ? riskYellow
-        : riskGreen;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: bgSurface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: inputBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
           Text(
-            'Live Call Scan — AI Analysis',
+            '${record.riskScore}% THREAT',
             style: GoogleFonts.rajdhani(
-              color: textPrimary,
-              fontWeight: FontWeight.w700,
+              color: riskRed,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Risk Assessment: $levelText ($percent%)',
-            style: GoogleFonts.rajdhani(
-              color: levelColor,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            monitor.safeDetectedKeywords.isEmpty
-                ? 'No sensitive keywords detected in current stream.'
-                : 'Keywords: ${monitor.safeDetectedKeywords.join(', ')}',
-            style: GoogleFonts.rajdhani(color: textSecondary, fontSize: 12),
           ),
         ],
       ),
@@ -423,378 +809,51 @@ class _AiRiskInsightCard extends StatelessWidget {
   }
 }
 
-class _SecurityScoreCard extends StatelessWidget {
-  final int score;
-  final Color color;
-  const _SecurityScoreCard({required this.score, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: bgSurface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: inputBorder),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Your Security Score',
-                  style: GoogleFonts.rajdhani(color: textSecondary),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '$score / 100',
-                  style: GoogleFonts.rajdhani(
-                    color: color,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(width: 90, height: 90, child: RiskGauge(score: score / 100)),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatsRow extends StatelessWidget {
-  final HistoryState history;
-  const _StatsRow({required this.history});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _MiniStat(
-            'Threats Blocked Today',
-            '${history.blockedThreatsToday}',
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(child: _MiniStat('Calls Scanned', '${history.todayScanned}')),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _MiniStat('Suspicious Calls', '${history.suspiciousCalls}'),
-        ),
-      ],
-    );
-  }
-}
-
-class _MiniStat extends StatelessWidget {
+class _QuickButton extends StatelessWidget {
+  final IconData icon;
   final String title;
-  final String value;
-  const _MiniStat(this.title, this.value);
+  final String subtitle;
+  final Color accent;
+  final VoidCallback onTap;
+
+  const _QuickButton({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.accent,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-      decoration: BoxDecoration(
-        color: bgSurface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: inputBorder),
-      ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: GoogleFonts.rajdhani(
-              color: accentTeal,
-              fontWeight: FontWeight.w700,
-              fontSize: 18,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.rajdhani(color: textMuted, fontSize: 10),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RecentAlertsCard extends StatelessWidget {
-  final List<CallRecord> records;
-  const _RecentAlertsCard({required this.records});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: bgSurface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: inputBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Recent Alerts',
-            style: GoogleFonts.rajdhani(
-              color: textPrimary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          if (records.isEmpty)
-            Text(
-              'No recent scam alerts.',
-              style: GoogleFonts.rajdhani(color: textMuted),
-            )
-          else
-            ...records.map(
-              (r) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '• ${r.callerName}',
-                      style: GoogleFonts.rajdhani(
-                        color: textPrimary,
-                        fontSize: 13,
-                      ),
-                    ),
-                    Text(
-                      DateFormat('MMM dd, hh:mm a').format(r.callTime),
-                      style: GoogleFonts.rajdhani(
-                        color: textMuted,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ThreatCard extends StatelessWidget {
-  final CallRecord record;
-  const _ThreatCard({required this.record});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2A0D0D),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: riskRed.withValues(alpha: 0.3), width: 1),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    _PulsingDot(),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Threat Detected!',
-                      style: GoogleFonts.rajdhani(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                _InfoLine('Source:', record.callerName),
-                const SizedBox(height: 4),
-                _InfoLine(
-                  'Call Status:',
-                  record.isSuspended
-                      ? 'Call Suspended (AI Verified)'
-                      : 'Monitoring',
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            children: [
-              RiskGauge(score: record.riskScore / 100, size: 100),
-              Text(
-                'Risk Score',
-                style: GoogleFonts.rajdhani(color: textSecondary, fontSize: 11),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PulsingDot extends StatefulWidget {
-  @override
-  State<_PulsingDot> createState() => _PulsingDotState();
-}
-
-class _PulsingDotState extends State<_PulsingDot>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _c;
-
-  @override
-  void initState() {
-    super.initState();
-    _c = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _c,
-      builder: (context, child) => Container(
-        width: 10,
-        height: 10,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: riskRed.withValues(alpha: 0.5 + _c.value * 0.5),
+          color: bgSurface,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: inputBorder),
         ),
-      ),
-    );
-  }
-}
-
-class _InfoLine extends StatelessWidget {
-  final String label;
-  final String value;
-  const _InfoLine(this.label, this.value);
-
-  @override
-  Widget build(BuildContext context) {
-    return RichText(
-      text: TextSpan(
-        style: GoogleFonts.rajdhani(color: textSecondary, fontSize: 13),
-        children: [
-          TextSpan(text: '$label '),
-          TextSpan(
-            text: value,
-            style: GoogleFonts.rajdhani(color: textPrimary, fontSize: 13),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DetectionToggle extends StatelessWidget {
-  final bool enabled;
-  final VoidCallback onToggle;
-  const _DetectionToggle({required this.enabled, required this.onToggle});
-
-  @override
-  Widget build(BuildContext context) {
-    final active = enabled;
-    return GestureDetector(
-      onTap: onToggle,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        height: 82,
-        decoration: BoxDecoration(
-          color: active ? accentTeal : accentTealDark,
-          borderRadius: BorderRadius.circular(34),
-          boxShadow: active
-              ? [
-                  BoxShadow(
-                    color: accentTeal.withValues(alpha: 0.35),
-                    blurRadius: 20,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : [],
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Threat Protection',
-                    style: GoogleFonts.rajdhani(
-                      color: active ? bgPrimary : textSecondary,
-                      fontSize: 19,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  Text(
-                    active
-                        ? 'Monitoring enabled for live calls'
-                        : 'Tap to protect your live call',
-                    style: GoogleFonts.rajdhani(
-                      color: active
-                          ? bgPrimary.withValues(alpha: 0.8)
-                          : textMuted,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
+            Icon(icon, color: accent, size: 20),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: GoogleFonts.rajdhani(
+                color: textPrimary,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
               ),
             ),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              width: 42,
-              height: 26,
-              decoration: BoxDecoration(
-                color: active
-                    ? Colors.white.withValues(alpha: 0.3)
-                    : Colors.white.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(13),
-              ),
-              child: Stack(
-                children: [
-                  AnimatedPositioned(
-                    duration: const Duration(milliseconds: 300),
-                    left: active ? 18 : 2,
-                    top: 2,
-                    child: Container(
-                      width: 22,
-                      height: 22,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                ],
+            Text(
+              subtitle,
+              style: GoogleFonts.rajdhani(
+                color: textMuted,
+                fontSize: 10,
               ),
             ),
           ],
@@ -812,7 +871,7 @@ class _AnalysisLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -825,48 +884,6 @@ class _AnalysisLine extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _QuickAccessCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  const _QuickAccessCard({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 110,
-        decoration: BoxDecoration(
-          color: bgSurface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: inputBorder, width: 0.8),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: textSecondary, size: 32),
-            const SizedBox(height: 10),
-            Text(
-              label,
-              style: GoogleFonts.rajdhani(
-                color: textSecondary,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
       ),
     );
   }

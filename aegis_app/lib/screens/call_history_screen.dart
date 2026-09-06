@@ -388,75 +388,189 @@ class _CallRecordTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final dateStr = DateFormat('MMM dd').format(record.callTime);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: bgSurface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: inputBorder, width: 0.8),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: accentTealDark,
-              border: Border.all(color: inputBorder),
+    return InkWell(
+      onTap: () => _showRecordDetails(context, record),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: bgSurface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: inputBorder, width: 0.8),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: bgPrimary,
+                border: Border.all(color: record.riskLevel.color.withValues(alpha: 0.5)),
+              ),
+              child: record.avatarAsset != null
+                  ? ClipOval(
+                      child: Image.asset(record.avatarAsset!, fit: BoxFit.cover),
+                    )
+                  : Icon(
+                      _callerIcon(record.callerName),
+                      color: record.riskLevel.color,
+                      size: 20,
+                    ),
             ),
-            child: record.avatarAsset != null
-                ? ClipOval(
-                    child: Image.asset(record.avatarAsset!, fit: BoxFit.cover),
-                  )
-                : Icon(
-                    _callerIcon(record.callerName),
-                    color: textSecondary,
-                    size: 20,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    record.callerName,
+                    style: GoogleFonts.rajdhani(
+                      color: textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+                  Text(
+                    record.phoneNumber,
+                    style: GoogleFonts.jetBrainsMono(
+                      color: textMuted,
+                      fontSize: 10,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: record.riskLevel.color,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        '${record.riskLevel.label} (${record.riskScore}%)',
+                        style: GoogleFonts.rajdhani(
+                          color: record.riskLevel.color,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              dateStr,
+              style: GoogleFonts.jetBrainsMono(color: textMuted, fontSize: 11),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showRecordDetails(BuildContext context, CallRecord record) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: bgSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+        side: BorderSide(color: inputBorder),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
+                const Icon(Icons.shield_rounded, color: accentCyan, size: 22),
+                const SizedBox(width: 8),
                 Text(
-                  record.callerName,
+                  'FORENSIC DOSSIER',
                   style: GoogleFonts.rajdhani(
                     color: textPrimary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.5,
                   ),
                 ),
-                const SizedBox(height: 3),
-                Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: record.riskLevel.color,
-                      ),
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      '${record.riskLevel.label} (${record.riskScore}%)',
-                      style: GoogleFonts.rajdhani(
-                        color: record.riskLevel.color,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, color: textSecondary),
+                  onPressed: () => Navigator.of(ctx).pop(),
                 ),
               ],
             ),
-          ),
+            const SizedBox(height: 10),
+            Text(
+              'Caller: ${record.callerName} (${record.phoneNumber})',
+              style: GoogleFonts.rajdhani(
+                color: textPrimary,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            Text(
+              DateFormat('MMM dd, yyyy • hh:mm a').format(record.callTime),
+              style: GoogleFonts.jetBrainsMono(color: textMuted, fontSize: 11),
+            ),
+            const SizedBox(height: 14),
+            _detailRow('Threat Score', '${record.riskScore}%', record.riskLevel.color),
+            _detailRow('Deepfake / Synthetic Voice', '${record.syntheticScore}%', textSecondary),
+            _detailRow('Scam Intent Score', '${record.intentScore}%', textSecondary),
+            _detailRow('Quarantined', record.isSuspended ? 'YES' : 'NO', record.isSuspended ? riskRed : accentEmerald),
+            const SizedBox(height: 18),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      backgroundColor: bgSurface,
+                      content: Text(
+                        'Dossier exported to local device storage.',
+                        style: GoogleFonts.rajdhani(color: accentEmerald),
+                      ),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: accentCyan,
+                  foregroundColor: bgPrimary,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                icon: const Icon(Icons.download_rounded, size: 18),
+                label: Text(
+                  'EXPORT FORENSIC REPORT',
+                  style: GoogleFonts.rajdhani(fontWeight: FontWeight.w800, letterSpacing: 1),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _detailRow(String label, String value, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: GoogleFonts.rajdhani(color: textSecondary, fontSize: 13)),
           Text(
-            dateStr,
-            style: GoogleFonts.rajdhani(color: textMuted, fontSize: 11),
+            value,
+            style: GoogleFonts.jetBrainsMono(color: color, fontWeight: FontWeight.w700, fontSize: 13),
           ),
         ],
       ),

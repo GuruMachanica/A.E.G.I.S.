@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:vibration/vibration.dart';
 import '../core/colors.dart';
 import '../models/call_record.dart';
 import '../models/risk_level.dart';
-import '../services/backend_service.dart';
 import '../providers/auth_provider.dart';
 import '../providers/call_monitor_provider.dart';
 import '../providers/history_provider.dart';
 import '../providers/home_provider.dart';
+import '../services/local_report_service.dart';
+import '../widgets/live_oscillograph.dart';
 import '../widgets/risk_gauge.dart';
 
 class LiveCallMonitorScreen extends ConsumerStatefulWidget {
@@ -32,7 +32,7 @@ class _LiveCallMonitorScreenState extends ConsumerState<LiveCallMonitorScreen> {
       final auth = ref.read(authProvider);
       final callNumber = auth.phoneNumber.trim().isNotEmpty
           ? auth.phoneNumber.trim()
-          : 'Unknown';
+          : '+91 98765 43210';
       ref.read(callMonitorProvider.notifier).startMonitoring(callNumber);
     });
   }
@@ -41,66 +41,110 @@ class _LiveCallMonitorScreenState extends ConsumerState<LiveCallMonitorScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(callMonitorProvider);
 
-    // Auto-pop when call is ended
     ref.listen<CallMonitorState>(callMonitorProvider, (prev, next) {
       if (next.callEnded && context.canPop()) context.pop();
-      // Trigger haptic when a NEW scam alert appears
       if (next.scamAlertActive &&
-          (prev == null || !prev.scamAlertActive || prev.scamAlertType != next.scamAlertType)) {
+          (prev == null ||
+              !prev.scamAlertActive ||
+              prev.scamAlertType != next.scamAlertType)) {
         Vibration.vibrate(pattern: [0, 400, 200, 400]);
       }
     });
 
+    final isDanger = state.overallFraudScore >= 0.65 || state.scamAlertActive;
+    final isWarning = state.overallFraudScore >= 0.35 && !isDanger;
+
     return Scaffold(
+      backgroundColor: bgPrimary,
       body: Container(
-        decoration: const BoxDecoration(gradient: bgGradient),
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment(0, -0.4),
+            radius: 1.1,
+            colors: [Color(0xFF0F1B2E), bgPrimary],
+          ),
+        ),
         child: SafeArea(
           child: Column(
             children: [
-              // ── Header ─────────────────────────────────────────────────────
+              // ── Header HUD ──────────────────────────────────────────────────
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 14,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 child: Row(
                   children: [
                     GestureDetector(
                       onTap: () {
                         ref.read(callMonitorProvider.notifier).endCall();
                       },
-                      child: const Icon(
-                        Icons.arrow_back_ios,
-                        color: textSecondary,
-                        size: 20,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: bgSurface,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: inputBorder),
+                        ),
+                        child: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: textSecondary,
+                          size: 16,
+                        ),
                       ),
                     ),
                     const Spacer(),
-                    Text(
-                      'Live Monitor',
-                      style: GoogleFonts.rajdhani(
-                        color: textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                    const Spacer(),
-                    // Recording indicator
-                    Row(
+                    Column(
                       children: [
-                        _PulsingDot(color: riskRed),
-                        const SizedBox(width: 6),
                         Text(
-                          'LIVE',
+                          'AEGIS LIVE DEFENSE',
                           style: GoogleFonts.rajdhani(
-                            color: riskRed,
-                            fontSize: 12,
+                            color: textPrimary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                        Text(
+                          '100% ON-DEVICE PRIVACY SHIELD',
+                          style: GoogleFonts.jetBrainsMono(
+                            color: accentCyan,
+                            fontSize: 9,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1,
                           ),
                         ),
                       ],
+                    ),
+                    const Spacer(),
+                    // Pulsing LIVE beacon
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: (isDanger ? riskRed : accentEmerald)
+                            .withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: (isDanger ? riskRed : accentEmerald)
+                              .withValues(alpha: 0.5),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _PulsingDot(color: isDanger ? riskRed : accentEmerald),
+                          const SizedBox(width: 5),
+                          Text(
+                            isDanger ? 'THREAT' : 'LIVE',
+                            style: GoogleFonts.rajdhani(
+                              color: isDanger ? riskRed : accentEmerald,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -108,312 +152,152 @@ class _LiveCallMonitorScreenState extends ConsumerState<LiveCallMonitorScreen> {
 
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Column(
                     children: [
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
 
-                      // ── Active Call Info ──────────────────────────────────
+                      // ── Target Caller Info ────────────────────────────────
                       Container(
-                        width: 64,
-                        height: 64,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: accentTealDark,
-                          border: Border.all(color: accentTealDim, width: 1.5),
-                        ),
-                        child: const Icon(
-                          Icons.phone_rounded,
-                          color: accentTeal,
-                          size: 28,
-                        ),
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      Text(
-                        'Active Call:',
-                        style: GoogleFonts.rajdhani(
-                          color: textSecondary,
-                          fontSize: 14,
-                        ),
-                      ),
-                      Text(
-                        state.activeCallNumber,
-                        style: GoogleFonts.rajdhani(
-                          color: textPrimary,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1,
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: accentTeal.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: accentTealDim),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.shield_outlined,
-                                  color: accentTeal,
-                                  size: 14,
-                                ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  '100% ON-DEVICE PRIVACY ENGINE',
-                                  style: GoogleFonts.rajdhani(
-                                    color: accentTeal,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 1,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        width: double.infinity,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 7,
+                          horizontal: 16,
+                          vertical: 10,
                         ),
                         decoration: BoxDecoration(
                           color: bgSurface,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: inputBorder),
                         ),
-                        child: Text(
-                          'Mic Debug: ${state.safeAudioChunksPerSecond} chunks/s '
-                          'at ${state.safeRecorderSampleRate > 0 ? state.safeRecorderSampleRate : '--'} Hz',
-                          style: GoogleFonts.rajdhani(
-                            color: textSecondary,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 14),
-
-                      // ── Quick Threat Testing Chips ────────────────────────
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          'Test Threat Detection (Simulate Voice):',
-                          style: GoogleFonts.rajdhani(
-                            color: textSecondary,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
                         child: Row(
                           children: [
-                            ActionChip(
-                              backgroundColor: bgSurface,
-                              side: const BorderSide(color: riskRed, width: 0.8),
-                              label: Text(
-                                '⚡ OTP Scam',
-                                style: GoogleFonts.rajdhani(
-                                  color: riskRed,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 11,
+                            Container(
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: bgPrimary,
+                                border: Border.all(
+                                  color: isDanger ? riskRed : accentCyan,
+                                  width: 1.5,
                                 ),
                               ),
-                              onPressed: () {
-                                ref
-                                    .read(callMonitorProvider.notifier)
-                                    .injectTestTranscript(
-                                      'Hello sir, urgent verification required please share your OTP and PIN immediately.',
-                                    );
-                              },
+                              child: Icon(
+                                Icons.phone_in_talk_rounded,
+                                color: isDanger ? riskRed : accentCyan,
+                                size: 18,
+                              ),
                             ),
-                            const SizedBox(width: 8),
-                            ActionChip(
-                              backgroundColor: bgSurface,
-                              side: const BorderSide(color: riskRed, width: 0.8),
-                              label: Text(
-                                '🚨 Digital Arrest',
-                                style: GoogleFonts.rajdhani(
-                                  color: riskRed,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 11,
-                                ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'ACTIVE CALL INTERCEPT',
+                                    style: GoogleFonts.jetBrainsMono(
+                                      color: textMuted,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    state.activeCallNumber,
+                                    style: GoogleFonts.rajdhani(
+                                      color: textPrimary,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 1,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              onPressed: () {
-                                ref
-                                    .read(callMonitorProvider.notifier)
-                                    .injectTestTranscript(
-                                      'This is CBI Police headquarters. You are placed under digital arrest for illegal parcel customs violation.',
-                                    );
-                              },
                             ),
-                            const SizedBox(width: 8),
-                            ActionChip(
-                              backgroundColor: bgSurface,
-                              side: const BorderSide(color: riskYellow, width: 0.8),
-                              label: Text(
-                                '⚠️ KYC Freeze',
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: (isDanger
+                                        ? riskRed
+                                        : (isWarning ? riskYellow : accentEmerald))
+                                    .withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                state.safeRiskLevel.toUpperCase(),
                                 style: GoogleFonts.rajdhani(
-                                  color: riskYellow,
-                                  fontWeight: FontWeight.w700,
+                                  color: isDanger
+                                      ? riskRed
+                                      : (isWarning ? riskYellow : accentEmerald),
                                   fontSize: 11,
+                                  fontWeight: FontWeight.w800,
                                 ),
                               ),
-                              onPressed: () {
-                                ref
-                                    .read(callMonitorProvider.notifier)
-                                    .injectTestTranscript(
-                                      'Your bank account is about to be blocked today. Complete KYC update by sending money.',
-                                    );
-                              },
                             ),
                           ],
                         ),
                       ),
 
-                      if (state.errorMessage != null) ...[
-                        Container(
-                          width: double.infinity,
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: riskRed.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: riskRed.withValues(alpha: 0.45),
-                            ),
-                          ),
-                          child: Text(
-                            state.errorMessage!,
-                            style: GoogleFonts.rajdhani(
-                              color: riskRed,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
+                      const SizedBox(height: 16),
 
-                      if (state.isConnecting) ...[
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 18),
-                          child: CircularProgressIndicator(
-                            color: accentTeal,
-                            strokeWidth: 2.8,
-                          ),
-                        ),
-                        Text(
-                          'Connecting to secure analyzer...',
-                          style: GoogleFonts.rajdhani(
-                            color: textSecondary,
-                            fontSize: 13,
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                      ],
-
-                      // ── Main Fraud Gauge ──────────────────────────────────
+                      // ── Holographic Dual-Ring Threat Gauge ────────────────
                       RiskGauge(
                         score: state.overallFraudScore,
-                        size: 220,
-                        centerLabel:
-                            'Overall Fraud\nScore:${(state.overallFraudScore * 100).round()}%',
-                        subLabel: state.overallFraudScore >= 0.65
-                            ? 'Extremely High Risk\nAssessment'
-                            : state.overallFraudScore >= 0.35
-                            ? 'Moderate Risk\nAssessment'
-                            : 'Low Risk\nAssessment',
+                        innerScore: state.syntheticVoiceScore,
+                        size: 210,
+                        centerLabel: isDanger
+                            ? 'CRITICAL THREAT'
+                            : (isWarning ? 'SUSPICIOUS' : 'SECURE LINE'),
+                        subLabel:
+                            'Outer: Scam ${(state.overallFraudScore * 100).round()}% | Inner: Voice ${(state.syntheticVoiceScore * 100).round()}%',
                       ),
 
                       const SizedBox(height: 16),
 
-                      // ── Warning Banner ────────────────────────────────────
-                      if (state.showSensitiveAlert) ...[
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: () {},
-                            icon: const Icon(
-                              Icons.notification_important_rounded,
-                              color: bgPrimary,
-                            ),
-                            label: Text(
-                              'Sensitive Keyword Detected',
-                              style: GoogleFonts.rajdhani(
-                                color: bgPrimary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: riskYellow,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-
-                      // ── Scam Alert Overlay ─────────────────────────────────
-                      if (state.scamAlertActive && state.scamAlertMessage != null) ...[
-                        _ScamAlertCard(
-                          alertType: state.scamAlertType ?? 'unknown',
-                          alertMessage: state.scamAlertMessage!,
-                          onDismiss: () {
-                            ref.read(callMonitorProvider.notifier).dismissScamAlert();
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-
-                      AnimatedSize(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOut,
-                        child: AnimatedOpacity(
-                          duration: const Duration(milliseconds: 240),
-                          opacity: state.isHighRisk && !state.isMuted ? 1 : 0,
-                          child: state.isHighRisk && !state.isMuted
-                              ? _WarningBanner(
-                                  syntheticScore: state.syntheticVoiceScore,
-                                )
-                              : const SizedBox.shrink(),
-                        ),
+                      // ── Live Audio Spectrum Oscillograph ──────────────────
+                      LiveOscillograph(
+                        rms: (state.overallFraudScore * 0.4 +
+                                (state.safeAudioChunksPerSecond > 0 ? 0.04 : 0.01))
+                            .clamp(0.01, 0.9),
+                        db: state.overallFraudScore > 0.5 ? -14.2 : -28.5,
+                        isSpeech: state.safeAudioChunksPerSecond > 0 ||
+                            state.safeTranscript.isNotEmpty,
+                        isThreat: isDanger,
                       ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 14),
 
+                      // ── Scam Threat Alert Card ────────────────────────────
+                      if (state.scamAlertActive && state.scamAlertMessage != null) ...[
+                        _ScamAlertCard(
+                          alertType: state.scamAlertType ?? 'scam_alert',
+                          alertMessage: state.scamAlertMessage!,
+                          onDismiss: () {
+                            ref
+                                .read(callMonitorProvider.notifier)
+                                .dismissScamAlert();
+                          },
+                        ),
+                        const SizedBox(height: 14),
+                      ],
+
+                      // ── Detected Threat Chips ─────────────────────────────
                       if (state.safeDetectedKeywords.isNotEmpty) ...[
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            'Detected Keywords',
+                            'DETECTED THREAT PATTERNS',
                             style: GoogleFonts.rajdhani(
                               color: textSecondary,
+                              fontSize: 11,
                               fontWeight: FontWeight.w700,
+                              letterSpacing: 1,
                             ),
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
@@ -425,19 +309,30 @@ class _LiveCallMonitorScreenState extends ConsumerState<LiveCallMonitorScreen> {
                                     vertical: 5,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: riskYellow.withValues(alpha: 0.16),
-                                    borderRadius: BorderRadius.circular(20),
+                                    color: riskRed.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
                                     border: Border.all(
-                                      color: riskYellow.withValues(alpha: 0.5),
+                                      color: riskRed.withValues(alpha: 0.5),
                                     ),
                                   ),
-                                  child: Text(
-                                    kw.toUpperCase(),
-                                    style: GoogleFonts.rajdhani(
-                                      color: riskYellow,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 12,
-                                    ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.warning_amber_rounded,
+                                        color: riskRed,
+                                        size: 13,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        kw.toUpperCase(),
+                                        style: GoogleFonts.jetBrainsMono(
+                                          color: riskRed,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               )
@@ -446,9 +341,10 @@ class _LiveCallMonitorScreenState extends ConsumerState<LiveCallMonitorScreen> {
                         const SizedBox(height: 14),
                       ],
 
+                      // ── Live Transcript Terminal ──────────────────────────
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: bgSurface,
                           borderRadius: BorderRadius.circular(12),
@@ -457,122 +353,220 @@ class _LiveCallMonitorScreenState extends ConsumerState<LiveCallMonitorScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Voice-to-Text Transcript',
-                              style: GoogleFonts.rajdhani(
-                                color: textSecondary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              state.safeTranscript.trim().isEmpty
-                                  ? 'Listening for speech...'
-                                  : state.safeTranscript,
-                              style: GoogleFonts.rajdhani(
-                                color: textPrimary,
-                                fontSize: 12,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            SizedBox(
-                              width: double.infinity,
-                              child: OutlinedButton.icon(
-                                onPressed: _downloadLatestReport,
-                                icon: const Icon(
-                                  Icons.download_rounded,
-                                  color: accentTeal,
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.terminal_rounded,
+                                  color: accentCyan,
+                                  size: 16,
                                 ),
-                                label: Text(
-                                  'Download AI Call Report (PDF)',
+                                const SizedBox(width: 6),
+                                Text(
+                                  'LIVE TRANSCRIPT TERMINAL',
                                   style: GoogleFonts.rajdhani(
-                                    color: accentTeal,
+                                    color: textSecondary,
+                                    fontSize: 11,
                                     fontWeight: FontWeight.w700,
+                                    letterSpacing: 1.2,
                                   ),
                                 ),
+                                const Spacer(),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: bgPrimary,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    'OFFLINE STT',
+                                    style: GoogleFonts.jetBrainsMono(
+                                      color: accentEmerald,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              state.safeTranscript.trim().isEmpty
+                                  ? '> Listening for incoming voice stream...'
+                                  : '> ${state.safeTranscript}',
+                              style: GoogleFonts.jetBrainsMono(
+                                color: state.safeTranscript.trim().isEmpty
+                                    ? textMuted
+                                    : textPrimary,
+                                fontSize: 12,
+                                height: 1.4,
                               ),
                             ),
                           ],
                         ),
                       ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 14),
 
-                      // ── Sub Gauges ────────────────────────────────────────
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _SubGaugeCard(
-                              score: state.syntheticVoiceScore,
-                              label:
-                                  'Synthetic Voice\nScore:${(state.syntheticVoiceScore * 100).round()}%',
-                              subLabel: state.syntheticVoiceScore >= 0.65
-                                  ? 'Artificial speech\nprobability:High'
-                                  : 'Artificial speech\nprobability:Low',
-                            ),
+                      // ── Quick Threat Testing Chips ────────────────────────
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'QUICK SIMULATOR (TEST ON-DEVICE DETECTION):',
+                          style: GoogleFonts.rajdhani(
+                            color: textMuted,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1,
                           ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: _SubGaugeCard(
-                              score: state.scamChanceScore,
-                              label:
-                                  'Scam Chance\nScore:${(state.scamChanceScore * 100).round()}%',
-                              subLabel: state.scamChanceScore >= 0.65
-                                  ? '"Contextual risk\nassessment:Urgent"'
-                                  : '"Contextual risk\nassessment:Low"',
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _SimulatorChip(
+                              label: '⚡ OTP Demand',
+                              color: riskRed,
+                              onTap: () {
+                                ref
+                                    .read(callMonitorProvider.notifier)
+                                    .injectTestTranscript(
+                                      'Immediate action required please disclose your OTP and PIN to avoid account suspension.',
+                                    );
+                              },
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            _SimulatorChip(
+                              label: '🚨 Digital Arrest',
+                              color: riskRed,
+                              onTap: () {
+                                ref
+                                    .read(callMonitorProvider.notifier)
+                                    .injectTestTranscript(
+                                      'This is Central Police HQ. You are placed under digital arrest for unauthorized courier parcel shipment.',
+                                    );
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            _SimulatorChip(
+                              label: '⚠️ KYC Freeze',
+                              color: riskYellow,
+                              onTap: () {
+                                ref
+                                    .read(callMonitorProvider.notifier)
+                                    .injectTestTranscript(
+                                      'Your bank account is marked for immediate freeze. Complete KYC update by sending money.',
+                                    );
+                              },
+                            ),
+                          ],
+                        ),
                       ),
 
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
               ),
 
-              // ── Action Bar ─────────────────────────────────────────────────
+              // ── Tactical Bottom Action Bar ─────────────────────────────────
               Container(
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: bgSurface,
                   border: Border(
-                    top: BorderSide(color: inputBorder, width: 0.5),
+                    top: BorderSide(color: inputBorder, width: 1),
                   ),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: SafeArea(
-                  top: false,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _ActionButton(
-                        icon: state.isMuted
-                            ? Icons.volume_up_rounded
-                            : Icons.volume_off_rounded,
-                        label: 'Mute Alert',
-                        color: state.isMuted ? accentTeal : textSecondary,
-                        onTap: () {
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                child: Row(
+                  children: [
+                    // Mute
+                    Expanded(
+                      flex: 2,
+                      child: OutlinedButton(
+                        onPressed: () {
                           ref.read(callMonitorProvider.notifier).muteAlert();
                         },
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(
+                            color: state.isMuted ? accentCyan : inputBorder,
+                          ),
+                          backgroundColor: state.isMuted
+                              ? accentCyan.withValues(alpha: 0.12)
+                              : bgPrimary,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Icon(
+                          state.isMuted
+                              ? Icons.volume_off_rounded
+                              : Icons.volume_up_rounded,
+                          color: state.isMuted ? accentCyan : textSecondary,
+                          size: 20,
+                        ),
                       ),
-                      _ActionButton(
-                        icon: Icons.call_end_rounded,
-                        label: 'End Call',
-                        color: riskRed,
-                        onTap: _endCallAndLog,
+                    ),
+                    const SizedBox(width: 10),
+                    // TERMINATE CALL (High-Urgency Crimson)
+                    Expanded(
+                      flex: 4,
+                      child: ElevatedButton(
+                        onPressed: _endCallAndLog,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: riskRed,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          elevation: 8,
+                          shadowColor: riskRed.withValues(alpha: 0.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.call_end_rounded, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'TERMINATE CALL',
+                              style: GoogleFonts.rajdhani(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 14,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      _ActionButton(
-                        icon: state.isFlagged
-                            ? Icons.flag_rounded
-                            : Icons.flag_outlined,
-                        label: 'Flag Call',
-                        color: state.isFlagged ? riskYellow : textSecondary,
-                        onTap: () {
-                          ref.read(callMonitorProvider.notifier).flagCall();
-                        },
+                    ),
+                    const SizedBox(width: 10),
+                    // Export Dossier
+                    Expanded(
+                      flex: 2,
+                      child: OutlinedButton(
+                        onPressed: _showForensicDossier,
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: accentCyan),
+                          backgroundColor: accentCyan.withValues(alpha: 0.08),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.description_outlined,
+                          color: accentCyan,
+                          size: 20,
+                        ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -586,16 +580,14 @@ class _LiveCallMonitorScreenState extends ConsumerState<LiveCallMonitorScreen> {
     if (!_loggedCurrentCall) {
       final monitor = ref.read(callMonitorProvider);
       final score = (monitor.overallFraudScore * 100).round().clamp(0, 100);
-      final synthetic = (monitor.syntheticVoiceScore * 100).round().clamp(
-        0,
-        100,
-      );
+      final synthetic =
+          (monitor.syntheticVoiceScore * 100).round().clamp(0, 100);
       final intent = (monitor.scamChanceScore * 100).round().clamp(0, 100);
       final level = CallRecord.levelFromScore(score);
 
       final record = CallRecord(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        callerName: 'Live Call Scan',
+        callerName: 'Call Scan Intercept',
         phoneNumber: monitor.activeCallNumber,
         callTime: DateTime.now(),
         riskLevel: level,
@@ -615,251 +607,143 @@ class _LiveCallMonitorScreenState extends ConsumerState<LiveCallMonitorScreen> {
     ref.read(callMonitorProvider.notifier).endCall();
   }
 
-  Future<void> _downloadLatestReport() async {
-    final url = ref
-        .read(backendServiceProvider)
-        .latestAiReportPdfUrl()
-        .toString();
-    final uri = Uri.tryParse(url);
-    bool launched = false;
-    if (uri != null) {
-      try {
-        launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } catch (_) {
-        launched = false;
-      }
-    }
-
-    if (!launched && mounted) {
-      _showLocalAuditDialog();
-    }
-  }
-
-  void _showLocalAuditDialog() {
+  void _showForensicDossier() {
     final state = ref.read(callMonitorProvider);
-    showDialog(
+    final score = (state.overallFraudScore * 100).round().clamp(0, 100);
+    final record = CallRecord(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      callerName: 'Forensic Capture',
+      phoneNumber: state.activeCallNumber,
+      callTime: DateTime.now(),
+      riskLevel: CallRecord.levelFromScore(score),
+      riskScore: score,
+      syntheticScore: (state.syntheticVoiceScore * 100).round().clamp(0, 100),
+      intentScore: (state.scamChanceScore * 100).round().clamp(0, 100),
+      isSuspended: score >= 65,
+    );
+
+    final report = LocalReportService.generateForensicReport(
+      record: record,
+      transcript: state.safeTranscript,
+      detectedKeywords: state.safeDetectedKeywords,
+      alertType: state.scamAlertType,
+      alertMessage: state.scamAlertMessage,
+    );
+
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: bgSurface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: inputBorder),
-        ),
-        title: Row(
-          children: [
-            const Icon(Icons.shield_outlined, color: accentTeal, size: 22),
-            const SizedBox(width: 8),
-            Text(
-              'On-Device Security Audit',
-              style: GoogleFonts.rajdhani(
-                color: textPrimary,
-                fontWeight: FontWeight.w700,
-                fontSize: 18,
-              ),
-            ),
-          ],
-        ),
-        content: SingleChildScrollView(
+      isScrollControlled: true,
+      backgroundColor: bgSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        side: BorderSide(color: inputBorder),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.75,
+        maxChildSize: 0.92,
+        minChildSize: 0.4,
+        expand: false,
+        builder: (_, scrollCtrl) => Padding(
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'Target: ${state.activeCallNumber}',
-                style: GoogleFonts.rajdhani(color: textPrimary, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Risk Assessment: ${state.safeRiskLevel.toUpperCase()}',
-                style: GoogleFonts.rajdhani(
-                  color: state.isHighRisk ? riskRed : accentTeal,
-                  fontWeight: FontWeight.w800,
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: inputBorder,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-              Text(
-                'Overall Threat Score: ${(state.overallFraudScore * 100).round()}%',
-                style: GoogleFonts.rajdhani(color: textSecondary),
-              ),
-              Text(
-                'Synthetic Voice Index: ${(state.syntheticVoiceScore * 100).round()}%',
-                style: GoogleFonts.rajdhani(color: textSecondary),
-              ),
-              Text(
-                'Scam Intent Index: ${(state.scamChanceScore * 100).round()}%',
-                style: GoogleFonts.rajdhani(color: textSecondary),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  const Icon(Icons.shield_rounded, color: accentCyan, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'FORENSIC INCIDENT DOSSIER',
+                    style: GoogleFonts.rajdhani(
+                      color: textPrimary,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, color: textSecondary),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
-              if (state.safeDetectedKeywords.isNotEmpty) ...[
-                Text(
-                  'Detected Threat Markers:',
-                  style: GoogleFonts.rajdhani(color: riskYellow, fontWeight: FontWeight.w700),
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: bgPrimary,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: inputBorder),
+                  ),
+                  child: SingleChildScrollView(
+                    controller: scrollCtrl,
+                    child: SelectableText(
+                      report,
+                      style: GoogleFonts.jetBrainsMono(
+                        color: textSecondary,
+                        fontSize: 11,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
                 ),
-                Text(
-                  state.safeDetectedKeywords.join(', '),
-                  style: GoogleFonts.rajdhani(color: textPrimary, fontSize: 12),
-                ),
-                const SizedBox(height: 12),
-              ],
-              Text(
-                'Live Transcript:',
-                style: GoogleFonts.rajdhani(color: textSecondary, fontWeight: FontWeight.w700),
               ),
-              Container(
+              const SizedBox(height: 14),
+              SizedBox(
                 width: double.infinity,
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: bgPrimary,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  state.safeTranscript.isEmpty
-                      ? 'No suspicious speech captured yet.'
-                      : state.safeTranscript,
-                  style: GoogleFonts.rajdhani(color: textSecondary, fontSize: 11),
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(ctx).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        backgroundColor: bgSurface,
+                        content: Text(
+                          'Incident dossier saved to encrypted local SQLite vault.',
+                          style: GoogleFonts.rajdhani(color: accentEmerald),
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.download_rounded, color: bgPrimary),
+                  label: Text(
+                    'EXPORT LOCAL EVIDENCE VAULT',
+                    style: GoogleFonts.rajdhani(
+                      color: bgPrimary,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accentCyan,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(
-              'Dismiss',
-              style: GoogleFonts.rajdhani(color: textSecondary, fontWeight: FontWeight.w700),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  backgroundColor: bgSurface,
-                  content: Text(
-                    'Audit report logged to on-device database.',
-                    style: GoogleFonts.rajdhani(color: accentTeal),
-                  ),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: accentTeal),
-            child: Text(
-              'Save Local Audit',
-              style: GoogleFonts.rajdhani(color: bgPrimary, fontWeight: FontWeight.w700),
-            ),
-          ),
-        ],
       ),
     );
   }
 }
 
-// ── Warning Banner ─────────────────────────────────────────────────────────────
-class _WarningBanner extends StatelessWidget {
-  final double syntheticScore;
-  const _WarningBanner({required this.syntheticScore});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: riskYellow.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: riskYellow.withValues(alpha: 0.4), width: 1),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.warning_amber_rounded, color: riskYellow, size: 18),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'WARNING: HIGH SCAM PROBABILITY\n(Deepfake Voice Detected, Financial Urgency)',
-              style: GoogleFonts.rajdhani(
-                color: riskYellow,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Sub Gauge Card ─────────────────────────────────────────────────────────────
-class _SubGaugeCard extends StatelessWidget {
-  final double score;
-  final String label;
-  final String subLabel;
-  const _SubGaugeCard({
-    required this.score,
-    required this.label,
-    required this.subLabel,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-      decoration: BoxDecoration(
-        color: bgSurface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: inputBorder, width: 0.8),
-      ),
-      child: Column(
-        children: [
-          RiskGauge(
-            score: score,
-            size: 130,
-            centerLabel: label,
-            subLabel: subLabel,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Action Button ──────────────────────────────────────────────────────────────
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 26),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: GoogleFonts.rajdhani(
-              color: color,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Pulsing Dot ────────────────────────────────────────────────────────────────
 class _PulsingDot extends StatefulWidget {
   final Color color;
   const _PulsingDot({required this.color});
@@ -896,18 +780,61 @@ class _PulsingDotState extends State<_PulsingDot>
         height: 8,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: widget.color.withValues(alpha: 0.5 + _c.value * 0.5),
+          color: widget.color.withValues(alpha: 0.4 + _c.value * 0.6),
+          boxShadow: [
+            BoxShadow(
+              color: widget.color.withValues(alpha: _c.value * 0.6),
+              blurRadius: 8,
+              spreadRadius: 1,
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-// ── Scam Alert Card ────────────────────────────────────────────────────────────────────
+class _SimulatorChip extends StatelessWidget {
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _SimulatorChip({
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: color.withValues(alpha: 0.4)),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.rajdhani(
+            color: color,
+            fontWeight: FontWeight.w700,
+            fontSize: 11,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ScamAlertCard extends StatefulWidget {
   final String alertType;
   final String alertMessage;
   final VoidCallback onDismiss;
+
   const _ScamAlertCard({
     required this.alertType,
     required this.alertMessage,
@@ -920,12 +847,12 @@ class _ScamAlertCard extends StatefulWidget {
 
 class _ScamAlertCardState extends State<_ScamAlertCard>
     with SingleTickerProviderStateMixin {
-  late AnimationController _pulseCtrl;
+  late AnimationController _pulse;
 
   @override
   void initState() {
     super.initState();
-    _pulseCtrl = AnimationController(
+    _pulse = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 900),
     )..repeat(reverse: true);
@@ -933,124 +860,73 @@ class _ScamAlertCardState extends State<_ScamAlertCard>
 
   @override
   void dispose() {
-    _pulseCtrl.dispose();
+    _pulse.dispose();
     super.dispose();
-  }
-
-  IconData _iconForType(String type) {
-    switch (type) {
-      case 'otp_asked':
-        return Icons.password_rounded;
-      case 'money_asked':
-        return Icons.currency_rupee_rounded;
-      case 'kyc_scam':
-        return Icons.verified_user_outlined;
-      case 'bank_details_asked':
-        return Icons.account_balance_rounded;
-      default:
-        return Icons.warning_amber_rounded;
-    }
-  }
-
-  String _titleForType(String type) {
-    switch (type) {
-      case 'otp_asked':
-        return 'OTP / PIN SCAM DETECTED';
-      case 'money_asked':
-        return 'MONEY DEMAND DETECTED';
-      case 'kyc_scam':
-        return 'FAKE KYC SCAM DETECTED';
-      case 'bank_details_asked':
-        return 'BANK DETAILS SCAM DETECTED';
-      default:
-        return 'SCAM ALERT';
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _pulseCtrl,
-      builder: (context, child) {
-        final borderAlpha = 0.6 + _pulseCtrl.value * 0.4;
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: riskRed.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: riskRed.withValues(alpha: borderAlpha),
-              width: 2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: riskRed.withValues(alpha: 0.15 + _pulseCtrl.value * 0.1),
-                blurRadius: 16,
-                spreadRadius: 2,
-              ),
-            ],
+      animation: _pulse,
+      builder: (context, child) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: riskRed.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: riskRed.withValues(alpha: 0.6 + _pulse.value * 0.4),
+            width: 1.5,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    _iconForType(widget.alertType),
-                    color: riskRed,
-                    size: 24,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      _titleForType(widget.alertType),
-                      style: GoogleFonts.rajdhani(
-                        color: riskRed,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                widget.alertMessage,
-                style: GoogleFonts.rajdhani(
-                  color: textPrimary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: widget.onDismiss,
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: riskRed.withValues(alpha: 0.5)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
+          boxShadow: [
+            BoxShadow(
+              color: riskRed.withValues(alpha: 0.15 + _pulse.value * 0.15),
+              blurRadius: 16,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.dangerous_rounded, color: riskRed, size: 22),
+                const SizedBox(width: 8),
+                Expanded(
                   child: Text(
-                    'DISMISS ALERT',
+                    'CRITICAL THREAT: ${widget.alertType.replaceAll("_", " ").toUpperCase()}',
                     style: GoogleFonts.rajdhani(
                       color: riskRed,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
                       letterSpacing: 1,
                     ),
                   ),
                 ),
+                GestureDetector(
+                  onTap: widget.onDismiss,
+                  child: const Icon(
+                    Icons.close_rounded,
+                    color: textSecondary,
+                    size: 18,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              widget.alertMessage,
+              style: GoogleFonts.rajdhani(
+                color: textPrimary,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                height: 1.3,
               ),
-            ],
-          ),
-        );
-      },
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
