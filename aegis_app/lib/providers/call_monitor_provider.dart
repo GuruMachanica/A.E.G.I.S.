@@ -258,6 +258,10 @@ class CallMonitorNotifier extends Notifier<CallMonitorState> {
 
   void dismissScamAlert() => state = state.copyWith(clearScamAlert: true);
 
+  void injectTestTranscript(String phrase) {
+    ref.read(liveCallServiceProvider).injectTestTranscript(phrase);
+  }
+
   void _scheduleReconnect() {
     if (state.activeCallNumber.isEmpty || state.callEnded) return;
     final callNumber = state.activeCallNumber;

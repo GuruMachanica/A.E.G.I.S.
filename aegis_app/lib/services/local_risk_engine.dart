@@ -7,12 +7,18 @@ class ThreatAlertResult {
   final List<String> detectedKeywords;
   final List<String> alerts;
   final String? primaryAlert;
+  final String? scamAlertType;
+  final String? scamAlertMessage;
+  final bool scamAlertActive;
 
   const ThreatAlertResult({
     required this.intentScore,
     required this.detectedKeywords,
     required this.alerts,
     this.primaryAlert,
+    this.scamAlertType,
+    this.scamAlertMessage,
+    this.scamAlertActive = false,
   });
 }
 
@@ -87,10 +93,35 @@ class LocalRiskEngine {
 
     // Baseline calculation: each matched threat pattern adds severity
     double score = 0.0;
-    if (detectedKeywords.contains('digital_arrest') ||
-        detectedKeywords.contains('otp_threat') ||
-        detectedKeywords.contains('pin_threat')) {
-      score = 0.85 + (detectedKeywords.length * 0.05);
+    String? scamAlertType;
+    String? scamAlertMessage;
+    bool scamAlertActive = false;
+
+    if (detectedKeywords.contains('otp_threat') || detectedKeywords.contains('pin_threat')) {
+      scamAlertType = 'otp_asked';
+      scamAlertMessage = 'Caller is aggressively asking for your OTP or PIN. NEVER enter or disclose your security code!';
+      scamAlertActive = true;
+      score = 0.90 + (detectedKeywords.length * 0.03);
+    } else if (detectedKeywords.contains('digital_arrest')) {
+      scamAlertType = 'digital_arrest';
+      scamAlertMessage = 'CRITICAL: Digital Arrest extortion scam detected. Law enforcement agencies never arrest people via video/voice calls!';
+      scamAlertActive = true;
+      score = 0.95;
+    } else if (detectedKeywords.contains('transfer_request')) {
+      scamAlertType = 'money_asked';
+      scamAlertMessage = 'Urgent money transfer demand detected. Verify recipient authenticity before sending funds!';
+      scamAlertActive = true;
+      score = 0.85 + (detectedKeywords.length * 0.03);
+    } else if (detectedKeywords.contains('kyc_urgency')) {
+      scamAlertType = 'kyc_scam';
+      scamAlertMessage = 'Fake KYC verification threat detected. Official bank accounts are not blocked over unsolicited calls!';
+      scamAlertActive = true;
+      score = 0.80 + (detectedKeywords.length * 0.03);
+    } else if (detectedKeywords.contains('bank_details') || detectedKeywords.contains('card_details')) {
+      scamAlertType = 'bank_details_asked';
+      scamAlertMessage = 'Caller is soliciting sensitive banking credentials or CVV numbers. Hang up immediately!';
+      scamAlertActive = true;
+      score = 0.78 + (detectedKeywords.length * 0.03);
     } else if (detectedKeywords.isNotEmpty) {
       score = 0.40 + (detectedKeywords.length * 0.15);
     }
@@ -100,6 +131,9 @@ class LocalRiskEngine {
       detectedKeywords: detectedKeywords,
       alerts: alerts,
       primaryAlert: primaryAlert,
+      scamAlertType: scamAlertType,
+      scamAlertMessage: scamAlertMessage,
+      scamAlertActive: scamAlertActive,
     );
   }
 }

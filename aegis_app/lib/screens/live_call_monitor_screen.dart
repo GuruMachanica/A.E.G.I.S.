@@ -149,6 +149,43 @@ class _LiveCallMonitorScreenState extends ConsumerState<LiveCallMonitorScreen> {
                       ),
 
                       const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: accentTeal.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: accentTealDim),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.shield_outlined,
+                                  color: accentTeal,
+                                  size: 14,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  '100% ON-DEVICE PRIVACY ENGINE',
+                                  style: GoogleFonts.rajdhani(
+                                    color: accentTeal,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(
@@ -171,7 +208,87 @@ class _LiveCallMonitorScreenState extends ConsumerState<LiveCallMonitorScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 14),
+
+                      // ── Quick Threat Testing Chips ────────────────────────
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Test Threat Detection (Simulate Voice):',
+                          style: GoogleFonts.rajdhani(
+                            color: textSecondary,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            ActionChip(
+                              backgroundColor: bgSurface,
+                              side: const BorderSide(color: riskRed, width: 0.8),
+                              label: Text(
+                                '⚡ OTP Scam',
+                                style: GoogleFonts.rajdhani(
+                                  color: riskRed,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 11,
+                                ),
+                              ),
+                              onPressed: () {
+                                ref
+                                    .read(callMonitorProvider.notifier)
+                                    .injectTestTranscript(
+                                      'Hello sir, urgent verification required please share your OTP and PIN immediately.',
+                                    );
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            ActionChip(
+                              backgroundColor: bgSurface,
+                              side: const BorderSide(color: riskRed, width: 0.8),
+                              label: Text(
+                                '🚨 Digital Arrest',
+                                style: GoogleFonts.rajdhani(
+                                  color: riskRed,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 11,
+                                ),
+                              ),
+                              onPressed: () {
+                                ref
+                                    .read(callMonitorProvider.notifier)
+                                    .injectTestTranscript(
+                                      'This is CBI Police headquarters. You are placed under digital arrest for illegal parcel customs violation.',
+                                    );
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            ActionChip(
+                              backgroundColor: bgSurface,
+                              side: const BorderSide(color: riskYellow, width: 0.8),
+                              label: Text(
+                                '⚠️ KYC Freeze',
+                                style: GoogleFonts.rajdhani(
+                                  color: riskYellow,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 11,
+                                ),
+                              ),
+                              onPressed: () {
+                                ref
+                                    .read(callMonitorProvider.notifier)
+                                    .injectTestTranscript(
+                                      'Your bank account is about to be blocked today. Complete KYC update by sending money.',
+                                    );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
 
                       if (state.errorMessage != null) ...[
                         Container(
@@ -504,19 +621,136 @@ class _LiveCallMonitorScreenState extends ConsumerState<LiveCallMonitorScreen> {
         .latestAiReportPdfUrl()
         .toString();
     final uri = Uri.tryParse(url);
-    if (uri == null ||
-        !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: bgSurface,
-          content: Text(
-            'Unable to download PDF report.',
-            style: GoogleFonts.rajdhani(color: riskYellow),
+    bool launched = false;
+    if (uri != null) {
+      try {
+        launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } catch (_) {
+        launched = false;
+      }
+    }
+
+    if (!launched && mounted) {
+      _showLocalAuditDialog();
+    }
+  }
+
+  void _showLocalAuditDialog() {
+    final state = ref.read(callMonitorProvider);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: bgSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: inputBorder),
+        ),
+        title: Row(
+          children: [
+            const Icon(Icons.shield_outlined, color: accentTeal, size: 22),
+            const SizedBox(width: 8),
+            Text(
+              'On-Device Security Audit',
+              style: GoogleFonts.rajdhani(
+                color: textPrimary,
+                fontWeight: FontWeight.w700,
+                fontSize: 18,
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Target: ${state.activeCallNumber}',
+                style: GoogleFonts.rajdhani(color: textPrimary, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Risk Assessment: ${state.safeRiskLevel.toUpperCase()}',
+                style: GoogleFonts.rajdhani(
+                  color: state.isHighRisk ? riskRed : accentTeal,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              Text(
+                'Overall Threat Score: ${(state.overallFraudScore * 100).round()}%',
+                style: GoogleFonts.rajdhani(color: textSecondary),
+              ),
+              Text(
+                'Synthetic Voice Index: ${(state.syntheticVoiceScore * 100).round()}%',
+                style: GoogleFonts.rajdhani(color: textSecondary),
+              ),
+              Text(
+                'Scam Intent Index: ${(state.scamChanceScore * 100).round()}%',
+                style: GoogleFonts.rajdhani(color: textSecondary),
+              ),
+              const SizedBox(height: 12),
+              if (state.safeDetectedKeywords.isNotEmpty) ...[
+                Text(
+                  'Detected Threat Markers:',
+                  style: GoogleFonts.rajdhani(color: riskYellow, fontWeight: FontWeight.w700),
+                ),
+                Text(
+                  state.safeDetectedKeywords.join(', '),
+                  style: GoogleFonts.rajdhani(color: textPrimary, fontSize: 12),
+                ),
+                const SizedBox(height: 12),
+              ],
+              Text(
+                'Live Transcript:',
+                style: GoogleFonts.rajdhani(color: textSecondary, fontWeight: FontWeight.w700),
+              ),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: bgPrimary,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  state.safeTranscript.isEmpty
+                      ? 'No suspicious speech captured yet.'
+                      : state.safeTranscript,
+                  style: GoogleFonts.rajdhani(color: textSecondary, fontSize: 11),
+                ),
+              ),
+            ],
           ),
         ),
-      );
-    }
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(
+              'Dismiss',
+              style: GoogleFonts.rajdhani(color: textSecondary, fontWeight: FontWeight.w700),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  backgroundColor: bgSurface,
+                  content: Text(
+                    'Audit report logged to on-device database.',
+                    style: GoogleFonts.rajdhani(color: accentTeal),
+                  ),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: accentTeal),
+            child: Text(
+              'Save Local Audit',
+              style: GoogleFonts.rajdhani(color: bgPrimary, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

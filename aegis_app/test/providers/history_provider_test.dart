@@ -30,6 +30,31 @@ void main() {
     final container = ProviderContainer();
     addTearDown(container.dispose);
 
+    await container.read(historyProvider.notifier).addRecord(
+          CallRecord(
+            id: 'm-1',
+            callerName: 'Mom Cell',
+            phoneNumber: '+15551234567',
+            callTime: DateTime.now(),
+            riskLevel: CallRecord.levelFromScore(10),
+            riskScore: 10,
+            syntheticScore: 5,
+            intentScore: 5,
+          ),
+        );
+    await container.read(historyProvider.notifier).addRecord(
+          CallRecord(
+            id: 's-1',
+            callerName: 'Spam Bank',
+            phoneNumber: '+15559876543',
+            callTime: DateTime.now(),
+            riskLevel: CallRecord.levelFromScore(85),
+            riskScore: 85,
+            syntheticScore: 80,
+            intentScore: 90,
+          ),
+        );
+
     await container.read(historyProvider.notifier).setSearch('mom');
     final records = container.read(historyProvider).filteredRecords;
 
