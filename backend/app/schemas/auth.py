@@ -18,7 +18,10 @@ class LoginIn(BaseModel):
 
 
 class GoogleLoginIn(BaseModel):
-    id_token: str = Field(..., min_length=10)
+    email: EmailStr
+    full_name: Optional[str] = "Google User"
+    google_id: Optional[str] = None
+    id_token: Optional[str] = None
 
 
 class Start2FAIn(BaseModel):

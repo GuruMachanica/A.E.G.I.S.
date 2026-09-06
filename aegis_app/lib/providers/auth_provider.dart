@@ -338,14 +338,20 @@ class AuthNotifier extends Notifier<AuthState> {
 
   Future<bool> signInWithGoogle() async {
     state = state.copyWith(isLoading: true, clearError: true);
+    if (googleServerClientId.isEmpty) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage:
+            'Google Sign-In requires a Web Client ID on Android.\nPlease run with --dart-define=AEGIS_GOOGLE_SERVER_CLIENT_ID=your_id or use Email/Password login.',
+      );
+      return false;
+    }
     try {
       final google = GoogleSignIn.instance;
       if (!_googleInitialized) {
         await google.initialize(
           clientId: googleClientId.isEmpty ? null : googleClientId,
-          serverClientId: googleServerClientId.isEmpty
-              ? null
-              : googleServerClientId,
+          serverClientId: googleServerClientId,
         );
         _googleInitialized = true;
       }
@@ -376,7 +382,12 @@ class AuthNotifier extends Notifier<AuthState> {
       );
       return true;
     } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      final errorStr = e.toString();
+      final displayMessage = errorStr.contains('serverClientId') ||
+              errorStr.contains('clientConfigurationError')
+          ? 'Google Sign-In is not configured. Please provide AEGIS_GOOGLE_SERVER_CLIENT_ID or use Email/Password.'
+          : errorStr;
+      state = state.copyWith(isLoading: false, errorMessage: displayMessage);
       return false;
     }
   }

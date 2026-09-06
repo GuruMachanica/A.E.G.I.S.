@@ -225,6 +225,51 @@ def verify_login_otp(data: VerifyLoginOtpIn) -> dict[str, Any]:
         return auth_success_payload(dict(user), acc_token, ref_token)
 
 
+@router.post("/auth/google-login")
+def google_login(data: GoogleLoginIn) -> dict[str, Any]:
+    email = data.email.strip().lower()
+    name = (data.full_name or "Google User").strip()
+    now = now_utc().isoformat()
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+        user = cursor.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        if user:
+            user_id = user["id"]
+            cursor.execute(
+                "UPDATE users SET full_name = COALESCE(?, full_name), last_login_at = ? WHERE id = ?",
+                (name, now, user_id),
+            )
+        else:
+            cursor.execute(
+                """
+                INSERT INTO users (full_name, email, password_hash, two_fa_enabled, created_at, last_login_at)
+                VALUES (?, ?, 'oauth_google_account', 0, ?, ?)
+                """,
+                (name, email, now, now),
+            )
+            user_id = cursor.lastrowid
+
+        acc_token = access_token(user_id)
+        ref_token = refresh_token(user_id)
+        r_hash = refresh_hash(ref_token)
+        cursor.execute(
+            """
+            INSERT INTO refresh_sessions (user_id, refresh_hash, device_id, created_at, expires_at, revoked)
+            VALUES (?, ?, 'mobile_google', ?, ?, 0)
+            """,
+            (
+                user_id,
+                r_hash,
+                now,
+                (now_utc() + timedelta(seconds=REFRESH_TOKEN_TTL_SEC)).isoformat(),
+            ),
+        )
+
+        fresh_user = cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+        return auth_success_payload(dict(fresh_user), acc_token, ref_token)
+
+
 @router.post("/auth/refresh")
 def refresh(data: RefreshIn) -> dict[str, Any]:
     payload = decode_token(data.refresh_token, secret=REFRESH_SECRET)
