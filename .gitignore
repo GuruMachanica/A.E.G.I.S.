@@ -1,58 +1,48 @@
-# OS / Editor
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
 .DS_Store
-Thumbs.db
-.vscode/
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
 .idea/
 
-# Python environments and caches
-venv/
-.venv/
-**/.venv/
-**/.venv*/
-**/__pycache__/
-**/*.py[cod]
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
 
-# Local env files
-.env
-**/.env
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
 
-# Runtime data / logs
-*.log
-*.tmp
-*.sqlite
-*.db
-*.db-journal
+# Symbolication related
+app.*.symbols
 
-# Flutter / Dart generated files
-aegis_app/.dart_tool/
-aegis_app/build/
-aegis_app/.flutter-plugins
-aegis_app/.flutter-plugins-dependencies
-aegis_app/.packages
+# Obfuscation related
+app.*.map.json
 
-# Platform build caches
-aegis_app/android/.gradle/
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
 
-# Firebase / Google service secrets
-aegis_app/android/app/google-services.json
-
-# Coverage and test artifacts
-coverage/
-*.lcov
-
-# Media, test audio dumps, and ML artifacts
-*.wav
-*.mp3
-*.ogg
-*.flac
-*.tfevents*
-*.zip
-*.tar.gz
-
-# Node / Web temporary builds
-node_modules/
-dist/
-*.egg-info/
+# Firebase Android config (contains API keys)
+/android/app/google-services.json
